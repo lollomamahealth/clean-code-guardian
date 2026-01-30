@@ -31,12 +31,6 @@
     }
   ],
   "hooks": "hooks/hooks.json",
-  "skills": [
-    {
-      "name": "check-patterns",
-      "path": "skills/check-patterns/SKILL.md"
-    }
-  ],
   "memory": {
     "files": [
       "memory/reusable-code.md",
