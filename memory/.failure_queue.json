@@ -1,0 +1,16 @@
+[
+  {
+    "name": "pytest_failure",
+    "category": "TEST",
+    "error": "FAILED tests/test_api.py::test_login - AssertionError: assert None == expected",
+    "timestamp": "2026-01-30T14:40:18.326772+00:00",
+    "command": "pytest"
+  },
+  {
+    "name": "assertion_error",
+    "category": "TEST",
+    "error": "AssertionError: assert None == expected",
+    "timestamp": "2026-01-30T14:40:18.327568+00:00",
+    "command": "pytest"
+  }
+]
