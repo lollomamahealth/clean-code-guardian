@@ -1,47 +1,10 @@
 {
   "name": "clean-code-guardian",
-  "version": "1.0.0",
-  "description": "Enforces clean code practices, prevents common AI mistakes, and learns over time through persistent memory files",
-  "author": "Quantitative Patient Agent Team",
-  "permissions": [
-    "read",
-    "write",
-    "bash"
-  ],
-  "agents": [
-    {
-      "name": "code-reuse-detector",
-      "path": "agents/code-reuse-detector.md",
-      "description": "Searches for existing utilities before writing new code"
-    },
-    {
-      "name": "test-validator",
-      "path": "agents/test-validator.md",
-      "description": "Validates test patterns against project conventions"
-    },
-    {
-      "name": "doc-lookup",
-      "path": "agents/doc-lookup.md",
-      "description": "Fetches version-specific documentation"
-    },
-    {
-      "name": "mistake-analyzer",
-      "path": "agents/mistake-analyzer.md",
-      "description": "Categorizes errors and generates memory updates"
-    }
-  ],
-  "hooks": "hooks/hooks.json",
-  "memory": {
-    "files": [
-      "memory/reusable-code.md",
-      "memory/test-patterns.md",
-      "memory/api-migrations.md",
-      "memory/mistakes.md",
-      "memory/shared-learnings.md"
-    ],
-    "autoLoad": [
-      "memory/api-migrations.md",
-      "memory/test-patterns.md"
-    ]
-  }
+  "description": "Configurable anti-pattern blocker with prompt enrichment and codebase scanning skills",
+  "version": "2.0.0",
+  "author": {
+    "name": "clean-code-guardian contributors"
+  },
+  "repository": "https://github.com/your-org/clean-code-guardian",
+  "license": "MIT"
 }

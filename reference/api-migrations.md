@@ -188,9 +188,3 @@ except asyncpg.PostgresError as e:
     logger.error(f"Database error: {e}")
     raise
 ```
-
----
-
-## Last Updated
-
-*This file is updated by the mistake-analyzer subagent when new patterns are discovered.*

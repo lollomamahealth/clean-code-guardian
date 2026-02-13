@@ -1,36 +1,27 @@
 {
-  "hooks": [
-    {
-      "event": "UserPromptSubmit",
-      "script": "hooks/scripts/prompt_enricher.py",
-      "description": "Injects relevant context based on user intent",
-      "enabled": true
-    },
-    {
-      "event": "PreToolUse",
-      "tools": ["Edit", "Write"],
-      "script": "hooks/scripts/pre_edit_validator.py",
-      "description": "Blocks anti-patterns before code is written",
-      "enabled": true
-    },
-    {
-      "event": "PostToolUse",
-      "tools": ["Bash"],
-      "script": "hooks/scripts/post_tool_learner.py",
-      "description": "Detects failures and queues for analysis",
-      "enabled": true
-    },
-    {
-      "event": "SubagentStop",
-      "subagents": ["mistake-analyzer"],
-      "script": "hooks/scripts/update_memory.py",
-      "description": "Persists learnings from mistake analysis to memory files",
-      "enabled": true
-    }
-  ],
-  "settings": {
-    "fail_on_block": true,
-    "log_decisions": false,
-    "memory_auto_load": true
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PLUGIN_ROOT/hooks/scripts/pre_edit_validator.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PLUGIN_ROOT/hooks/scripts/prompt_enricher.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

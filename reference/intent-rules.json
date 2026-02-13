@@ -1,0 +1,53 @@
+{
+  "intents": [
+    {
+      "id": "move_code",
+      "patterns": ["\\bmove\\b.*\\b(function|class|method|code|file)\\b", "\\brelocate\\b", "\\bmove\\b.*\\bto\\b"],
+      "context": "## Clarification: Move vs Modify\n\nWhen you say \"move\" code, please clarify:\n- **Move only**: Relocate code to new location WITHOUT modifying it\n- **Move and refactor**: Relocate and update structure/imports\n- **Move and update**: Relocate and change behavior\n\nThe code should be moved as-is unless you explicitly want modifications.",
+      "reference_file": null,
+      "reference_section": null
+    },
+    {
+      "id": "test_request",
+      "patterns": ["\\bwrite\\s+tests?\\b", "\\badd\\s+tests?\\b", "\\btest\\b.*\\bfor\\b", "\\bunit\\s+tests?\\b", "\\bpytest\\b"],
+      "context": "Review project test conventions before writing tests.",
+      "reference_file": "test-patterns.md",
+      "reference_section": null
+    },
+    {
+      "id": "create_function",
+      "patterns": ["\\bcreate\\b.*\\b(function|method|utility|helper)\\b", "\\bwrite\\b.*\\b(function|method|utility|helper)\\b", "\\badd\\b.*\\b(function|method|utility|helper)\\b", "\\bimplement\\b.*\\b(function|method)\\b"],
+      "context": "## Before Creating New Code\n\nIMPORTANT: Before creating a new utility function:\n1. Check if similar functionality already exists in the codebase\n2. Search for existing utilities in common directories\n3. If found, reuse existing code instead of duplicating",
+      "reference_file": null,
+      "reference_section": null
+    },
+    {
+      "id": "pydantic_model",
+      "patterns": ["\\bpydantic\\b", "\\bbasemodel\\b", "\\bmodel\\b.*\\bclass\\b"],
+      "context": "Pydantic v2 syntax is required in this project.",
+      "reference_file": "api-migrations.md",
+      "reference_section": "Pydantic"
+    },
+    {
+      "id": "database_query",
+      "patterns": ["\\bsql\\b", "\\bquery\\b.*\\bdatabase\\b", "\\bpostgres\\b", "\\basyncpg\\b", "\\bdb\\s*\\.\\b"],
+      "context": "All SQL queries must use parameterized queries for safety.",
+      "reference_file": "api-migrations.md",
+      "reference_section": "SQL"
+    },
+    {
+      "id": "async_code",
+      "patterns": ["\\basync\\b", "\\bawait\\b", "\\basyncio\\b", "\\bcoroutine\\b"],
+      "context": "This project uses async I/O patterns.",
+      "reference_file": "api-migrations.md",
+      "reference_section": "Async"
+    },
+    {
+      "id": "fix_error",
+      "patterns": ["\\bfix\\b.*\\berror\\b", "\\bdebug\\b", "\\bfailing\\b", "\\bbroken\\b"],
+      "context": "Check shared learnings for common pitfalls before debugging.",
+      "reference_file": "shared-learnings.md",
+      "reference_section": "Common Pitfalls"
+    }
+  ]
+}

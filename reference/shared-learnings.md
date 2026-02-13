@@ -107,9 +107,3 @@ Before submitting code, verify:
 - [Pydantic v2 Migration Guide](https://docs.pydantic.dev/latest/migration/)
 - [asyncpg Documentation](https://magicstack.github.io/asyncpg/)
 - [Python Type Hints Cheat Sheet](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html)
-
----
-
-## Last Updated
-
-*Updated automatically as patterns are discovered across projects.*

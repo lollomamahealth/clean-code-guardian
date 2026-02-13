@@ -1,14 +1,6 @@
 # Clean Code Guardian
 
-A Claude Code plugin that enforces clean code practices, prevents common AI coding mistakes, and learns over time through persistent memory files.
-
-## Features
-
-- **Anti-Pattern Blocking**: Prevents deprecated APIs and dangerous patterns before they're written
-- **Context Injection**: Automatically enriches prompts with relevant project conventions
-- **Failure Learning**: Detects errors and logs them for future prevention
-- **Code Reuse Detection**: Finds existing utilities before creating duplicates
-- **Test Validation**: Ensures tests follow project conventions
+A Claude Code plugin that blocks anti-patterns before they're written, enriches prompts with project context, and provides codebase scanning skills. Language-agnostic and fully configurable.
 
 ## Installation
 
@@ -28,146 +20,118 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-## What It Does
+## How It Works
 
-### Pre-Edit Validation
+### Hooks
 
-Blocks anti-patterns before code is written:
+Two hooks fire automatically during your coding session:
 
-| Pattern | Issue | Suggestion |
-|---------|-------|------------|
-| `.dict()` | Pydantic v1 | Use `.model_dump()` |
-| `.parse_obj()` | Pydantic v1 | Use `.model_validate()` |
-| `default=[]` | Mutable default | Use `Field(default_factory=list)` |
-| `f"SELECT...{var}"` | SQL injection | Use parameterized queries |
-| `datetime.now()` | Naive datetime | Use `datetime.now(UTC)` |
-| `except:` | Bare except | Catch specific exceptions |
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `pre_edit_validator.py` | PreToolUse (Edit, Write) | Blocks anti-patterns before code is written |
+| `prompt_enricher.py` | UserPromptSubmit | Injects relevant project context based on detected intent |
 
-### Prompt Enrichment
+**Pre-edit validation** loads patterns from `reference/patterns.json` and denies Edit/Write tool calls that contain matches. For example, writing `.dict()` in a Python file is blocked with a suggestion to use `.model_dump()`.
 
-Automatically injects context based on user intent:
+**Prompt enrichment** loads intent rules from `reference/intent-rules.json` and appends relevant context from reference files when it detects keywords like "write tests", "pydantic", or "move code" in your prompt.
 
-- **"write tests"** → Injects test patterns and available fixtures
-- **"move code"** → Clarifies move vs. modify intent
-- **"create function"** → Reminds to check for existing utilities
-- **"pydantic model"** → Injects Pydantic v2 patterns
+### Skills
 
-### Failure Learning
+Three user-invocable skills are available:
 
-When errors occur:
+| Skill | Description |
+|-------|-------------|
+| `/check-patterns [path]` | Scan the codebase for anti-patterns and report findings |
+| `/analyze-mistakes` | Analyze recent errors to identify patterns and suggest preventions |
+| `/validate-tests [path]` | Validate test files against project conventions |
 
-1. `post_tool_learner.py` detects failures from command output
-2. `mistake-analyzer` subagent categorizes the error
-3. `update_memory.py` persists learnings to memory files
-4. Future prompts benefit from accumulated knowledge
+## Customization
+
+### Adding Anti-Patterns
+
+Edit `reference/patterns.json` to add, remove, or modify patterns. Each pattern has:
+
+```json
+{
+  "id": "my-pattern-id",
+  "pattern": "regex_here",
+  "message": "Human-readable explanation",
+  "suggestion": "What to use instead",
+  "file_globs": ["*.py", "*.js"],
+  "severity": "error",
+  "tags": ["category"]
+}
+```
+
+Patterns work for any language — just set the appropriate `file_globs`.
+
+### Adding Intent Detection Rules
+
+Edit `reference/intent-rules.json` to customize prompt enrichment:
+
+```json
+{
+  "id": "my-intent",
+  "patterns": ["\\bkeyword\\b"],
+  "context": "Static context to inject",
+  "reference_file": "optional-reference-file.md",
+  "reference_section": "Optional Section Name"
+}
+```
+
+### Reference Files
+
+The `reference/` directory contains project knowledge used by hooks and skills:
+
+| File | Purpose |
+|------|---------|
+| `patterns.json` | Anti-pattern definitions (used by pre-edit hook and /check-patterns) |
+| `intent-rules.json` | Intent detection rules (used by prompt enricher) |
+| `api-migrations.md` | Legacy → modern API mappings |
+| `test-patterns.md` | Project-specific test conventions |
+| `shared-learnings.md` | Cross-project insights and common pitfalls |
 
 ## Structure
 
 ```
 clean-code-guardian/
 ├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest
-├── agents/
-│   ├── code-reuse-detector.md   # Finds existing utilities
-│   ├── test-validator.md        # Validates test patterns
-│   ├── doc-lookup.md            # Version-specific documentation
-│   └── mistake-analyzer.md      # Categorizes errors
+│   └── plugin.json                # Plugin manifest
 ├── hooks/
-│   ├── hooks.json               # Hook configuration
+│   ├── hooks.json                 # Hook configuration
 │   └── scripts/
-│       ├── pre_edit_validator.py
-│       ├── prompt_enricher.py
-│       ├── post_tool_learner.py
-│       └── update_memory.py
+│       ├── pre_edit_validator.py  # Blocks anti-patterns on Edit/Write
+│       └── prompt_enricher.py     # Enriches prompts with context
 ├── skills/
-│   └── check-patterns/SKILL.md  # /check-patterns command
-└── memory/
-    ├── reusable-code.md         # Utility index
-    ├── test-patterns.md         # Test conventions
-    ├── api-migrations.md        # API migration guide
-    ├── mistakes.md              # Error log
-    └── shared-learnings.md      # Cross-project insights
+│   ├── check-patterns/
+│   │   └── SKILL.md              # /check-patterns command
+│   ├── analyze-mistakes/
+│   │   └── SKILL.md              # /analyze-mistakes command
+│   └── validate-tests/
+│       └── SKILL.md              # /validate-tests command
+└── reference/
+    ├── patterns.json              # Configurable anti-pattern definitions
+    ├── intent-rules.json          # Configurable intent detection rules
+    ├── api-migrations.md          # API migration guide
+    ├── test-patterns.md           # Test conventions
+    └── shared-learnings.md        # Cross-project insights
 ```
 
-## Skills
+## Shipped Patterns
 
-### `/check-patterns`
+The plugin ships with Python-focused patterns out of the box:
 
-Scan the codebase for anti-patterns and update memory files:
+| Pattern | Issue | Suggestion |
+|---------|-------|------------|
+| `.dict()` | Pydantic v1 | `.model_dump()` |
+| `.parse_obj()` | Pydantic v1 | `.model_validate()` |
+| `default=[]` | Mutable default | `Field(default_factory=list)` |
+| `f"SELECT...{var}"` | SQL injection | Parameterized queries |
+| `datetime.now()` | Naive datetime | `datetime.now(UTC)` |
+| `except:` | Bare except | Specific exceptions |
+| `@validator` | Pydantic v1 | `@field_validator` |
 
-```
-/check-patterns [path]
-```
-
-- Indexes existing utilities
-- Detects anti-patterns
-- Validates test files
-- Updates memory files
-
-## Memory Files
-
-The plugin maintains persistent memory across sessions:
-
-| File | Purpose |
-|------|---------|
-| `reusable-code.md` | Index of project utilities to prevent duplication |
-| `test-patterns.md` | Project-specific test conventions |
-| `api-migrations.md` | Legacy → modern API mappings |
-| `mistakes.md` | Log of errors with corrections |
-| `shared-learnings.md` | Cross-project insights |
-
-## Customization
-
-### Adding Patterns
-
-Edit `hooks/scripts/pre_edit_validator.py` to add new anti-patterns:
-
-```python
-ANTI_PATTERNS = [
-    {
-        "name": "my_pattern",
-        "pattern": r"regex_here",
-        "message": "User-friendly message",
-        "suggestion": "What to use instead",
-        "file_types": [".py"],
-    },
-    # ...
-]
-```
-
-### Adding Intent Detection
-
-Edit `hooks/scripts/prompt_enricher.py` to detect new intents:
-
-```python
-INTENT_PATTERNS = [
-    {
-        "name": "my_intent",
-        "patterns": [r"keyword1", r"keyword2"],
-        "context": "Context to inject",
-        "memory_file": "optional-memory-file.md",
-    },
-    # ...
-]
-```
-
-## Hooks
-
-| Hook | Event | Purpose |
-|------|-------|---------|
-| `prompt_enricher.py` | UserPromptSubmit | Inject context |
-| `pre_edit_validator.py` | PreToolUse[Edit,Write] | Block anti-patterns |
-| `post_tool_learner.py` | PostToolUse[Bash] | Detect failures |
-| `update_memory.py` | SubagentStop[mistake-analyzer] | Persist learnings |
-
-## Subagents
-
-| Agent | Purpose |
-|-------|---------|
-| `code-reuse-detector` | Search for existing utilities before writing new code |
-| `test-validator` | Validate tests against project conventions |
-| `doc-lookup` | Fetch version-specific documentation |
-| `mistake-analyzer` | Categorize errors and generate memory updates |
+Add your own patterns for any language by editing `reference/patterns.json`.
 
 ## License
 

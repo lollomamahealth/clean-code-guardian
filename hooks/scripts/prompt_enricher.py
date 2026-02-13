@@ -2,11 +2,12 @@
 """
 Prompt enricher hook for Clean Code Guardian.
 
-Detects user intent and injects relevant context from memory files.
+Detects user intent and injects relevant context from reference files.
 Called by Claude Code's UserPromptSubmit hook.
 
-Input: JSON on stdin with user prompt
-Output: JSON with enriched prompt or original if no enrichment needed
+Input: JSON on stdin with session_id, transcript_path, cwd, etc.
+       The user's prompt is in the input as "query" or extracted from the transcript.
+Output: JSON with hookSpecificOutput containing additionalContext
 """
 
 import json
@@ -16,127 +17,36 @@ import sys
 from pathlib import Path
 
 
-# Intent patterns and their corresponding memory/context injections
-INTENT_PATTERNS = [
-    {
-        "name": "move_code",
-        "patterns": [
-            r"\bmove\b.*\b(function|class|method|code|file)\b",
-            r"\brelocate\b",
-            r"\bmove\b.*\bto\b",
-        ],
-        "context": """
-## Clarification: Move vs Modify
-
-When you say "move" code, please clarify:
-- **Move only**: Relocate code to new location WITHOUT modifying it
-- **Move and refactor**: Relocate and update structure/imports
-- **Move and update**: Relocate and change behavior
-
-The code should be moved as-is unless you explicitly want modifications.
-""",
-    },
-    {
-        "name": "test_request",
-        "patterns": [
-            r"\bwrite\s+tests?\b",
-            r"\badd\s+tests?\b",
-            r"\btest\b.*\bfor\b",
-            r"\bunit\s+tests?\b",
-            r"\bpytest\b",
-        ],
-        "memory_file": "test-patterns.md",
-        "context_prefix": "## Test Patterns for This Project\n\n",
-    },
-    {
-        "name": "create_function",
-        "patterns": [
-            r"\bcreate\b.*\b(function|method|utility|helper)\b",
-            r"\bwrite\b.*\b(function|method|utility|helper)\b",
-            r"\badd\b.*\b(function|method|utility|helper)\b",
-            r"\bimplement\b.*\b(function|method)\b",
-        ],
-        "context": """
-## Before Creating New Code
-
-IMPORTANT: Before creating a new utility function:
-1. Check if similar functionality already exists in the codebase
-2. Search in `src/*/utils/` directories
-3. Check `reusable-code.md` memory file for indexed utilities
-4. If found, reuse existing code instead of duplicating
-
-Run the code-reuse-detector subagent if uncertain.
-""",
-        "memory_file": "reusable-code.md",
-    },
-    {
-        "name": "pydantic_model",
-        "patterns": [
-            r"\bpydantic\b",
-            r"\bbasemodel\b",
-            r"\bmodel\b.*\bclass\b",
-            r"\bdata\s*class\b",
-        ],
-        "memory_file": "api-migrations.md",
-        "context_prefix": "## Pydantic v2 Patterns Required\n\n",
-        "section_filter": "Pydantic",
-    },
-    {
-        "name": "database_query",
-        "patterns": [
-            r"\bsql\b",
-            r"\bquery\b.*\bdatabase\b",
-            r"\bpostgres\b",
-            r"\basyncpg\b",
-            r"\bdb\s*\.\b",
-        ],
-        "memory_file": "api-migrations.md",
-        "context_prefix": "## SQL Safety Required\n\n",
-        "section_filter": "SQL",
-    },
-    {
-        "name": "async_code",
-        "patterns": [
-            r"\basync\b",
-            r"\bawait\b",
-            r"\basyncio\b",
-            r"\bcoroutine\b",
-        ],
-        "memory_file": "api-migrations.md",
-        "context_prefix": "## Async Patterns\n\n",
-        "section_filter": "Async",
-    },
-    {
-        "name": "fix_error",
-        "patterns": [
-            r"\bfix\b.*\berror\b",
-            r"\bdebug\b",
-            r"\bfailing\b",
-            r"\bbroken\b",
-        ],
-        "memory_file": "mistakes.md",
-        "context_prefix": "## Previous Mistakes to Avoid\n\n",
-    },
-]
-
-
 def get_plugin_dir() -> Path:
-    """Get the plugin directory path."""
-    # This script is in hooks/scripts/, plugin root is ../..
+    """Get the plugin directory path via env var or relative path."""
+    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
+    if env_root:
+        return Path(env_root)
     return Path(__file__).parent.parent.parent
 
 
-def load_memory_file(filename: str, section_filter: str | None = None) -> str:
-    """Load content from a memory file, optionally filtering to a section."""
-    memory_path = get_plugin_dir() / "memory" / filename
+def load_intent_rules() -> list[dict]:
+    """Load intent detection rules from reference/intent-rules.json."""
+    rules_file = get_plugin_dir() / "reference" / "intent-rules.json"
+    if not rules_file.exists():
+        return []
+    try:
+        data = json.loads(rules_file.read_text())
+        return data.get("intents", [])
+    except (json.JSONDecodeError, OSError):
+        return []
 
-    if not memory_path.exists():
+
+def load_reference_file(filename: str, section_filter: str | None = None) -> str:
+    """Load content from a reference file, optionally filtering to a section."""
+    ref_path = get_plugin_dir() / "reference" / filename
+
+    if not ref_path.exists():
         return ""
 
-    content = memory_path.read_text()
+    content = ref_path.read_text()
 
     if section_filter:
-        # Extract relevant section
         lines = content.split("\n")
         in_section = False
         section_lines = []
@@ -153,94 +63,92 @@ def load_memory_file(filename: str, section_filter: str | None = None) -> str:
         if section_lines:
             return "\n".join(section_lines)
 
-    # Return first 100 lines if no filter
+    # Return first 100 lines if no filter or section not found
     lines = content.split("\n")[:100]
     return "\n".join(lines)
 
 
-def detect_intent(prompt: str) -> list[dict]:
-    """Detect user intent from prompt text."""
+def detect_intents(prompt: str, rules: list[dict]) -> list[dict]:
+    """Detect user intent from prompt text using configurable rules."""
     prompt_lower = prompt.lower()
-    matched_intents = []
+    matched = []
 
-    for intent in INTENT_PATTERNS:
-        for pattern in intent["patterns"]:
+    for rule in rules:
+        for pattern in rule.get("patterns", []):
             if re.search(pattern, prompt_lower):
-                matched_intents.append(intent)
-                break  # Only match each intent once
+                matched.append(rule)
+                break
 
-    return matched_intents
+    return matched
 
 
 def build_enrichment(intents: list[dict]) -> str:
     """Build enrichment context from matched intents."""
-    enrichments = []
+    sections = []
 
     for intent in intents:
         parts = []
 
-        # Add static context if present
-        if "context" in intent:
-            parts.append(intent["context"])
+        context = intent.get("context")
+        if context:
+            parts.append(context)
 
-        # Load memory file if specified
-        if "memory_file" in intent:
-            memory_content = load_memory_file(
-                intent["memory_file"],
-                intent.get("section_filter")
+        ref_file = intent.get("reference_file")
+        if ref_file:
+            ref_content = load_reference_file(
+                ref_file,
+                intent.get("reference_section"),
             )
-            if memory_content:
-                prefix = intent.get("context_prefix", "")
-                parts.append(f"{prefix}{memory_content}")
+            if ref_content:
+                parts.append(ref_content)
 
         if parts:
-            enrichments.append("\n".join(parts))
+            sections.append("\n\n".join(parts))
 
-    if enrichments:
-        return "\n\n---\n\n".join(enrichments)
-
+    if sections:
+        return "\n\n---\n\n".join(sections)
     return ""
 
 
 def main():
     """Main entry point for the hook."""
     try:
-        # Read input from stdin
         input_data = json.load(sys.stdin)
 
-        prompt = input_data.get("prompt", "")
+        # UserPromptSubmit provides the prompt in "query"
+        prompt = input_data.get("query", "")
 
         if not prompt:
-            print(json.dumps({"prompt": prompt}))
+            print(json.dumps({}))
             return
 
-        # Detect intent
-        intents = detect_intent(prompt)
+        rules = load_intent_rules()
+        if not rules:
+            print(json.dumps({}))
+            return
+
+        intents = detect_intents(prompt, rules)
 
         if not intents:
-            # No enrichment needed
-            print(json.dumps({"prompt": prompt}))
+            print(json.dumps({}))
             return
 
-        # Build enrichment
         enrichment = build_enrichment(intents)
 
         if enrichment:
-            # Append context to prompt
-            enriched_prompt = f"{prompt}\n\n<context from=clean-code-guardian>\n{enrichment}\n</context>"
-            print(json.dumps({"prompt": enriched_prompt}))
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": f"## Project Conventions (clean-code-guardian)\n\n{enrichment}",
+                }
+            }))
         else:
-            print(json.dumps({"prompt": prompt}))
+            print(json.dumps({}))
 
     except json.JSONDecodeError:
-        # Return original if we can't parse
-        print(json.dumps({"prompt": ""}))
-    except Exception as e:
-        # Log error but don't block
-        print(json.dumps({
-            "prompt": input_data.get("prompt", "") if 'input_data' in dir() else "",
-            "warning": f"Enricher error: {e}"
-        }))
+        print(json.dumps({}))
+    except Exception:
+        print(json.dumps({}))
 
 
 if __name__ == "__main__":

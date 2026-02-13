@@ -1,0 +1,140 @@
+{
+  "patterns": [
+    {
+      "id": "pydantic-dict-v1",
+      "pattern": "\\.dict\\(\\)",
+      "message": "Use .model_dump() instead of .dict() (Pydantic v2)",
+      "suggestion": ".model_dump()",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-parse-obj-v1",
+      "pattern": "\\.parse_obj\\(",
+      "message": "Use .model_validate() instead of .parse_obj() (Pydantic v2)",
+      "suggestion": ".model_validate(",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-parse-raw-v1",
+      "pattern": "\\.parse_raw\\(",
+      "message": "Use .model_validate_json() instead of .parse_raw() (Pydantic v2)",
+      "suggestion": ".model_validate_json(",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-mutable-default-list",
+      "pattern": ":\\s*list\\[.*\\]\\s*=\\s*\\[\\]",
+      "message": "Use Field(default_factory=list) for mutable defaults in Pydantic models",
+      "suggestion": ": list[...] = Field(default_factory=list)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-mutable-default-dict",
+      "pattern": ":\\s*dict\\[.*\\]\\s*=\\s*\\{\\}",
+      "message": "Use Field(default_factory=dict) for mutable defaults in Pydantic models",
+      "suggestion": ": dict[...] = Field(default_factory=dict)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-old-config",
+      "pattern": "class Config:\\s*\\n\\s+\\w+\\s*=",
+      "message": "Use model_config = ConfigDict(...) instead of class Config (Pydantic v2)",
+      "suggestion": "model_config = ConfigDict(...)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-old-validator",
+      "pattern": "@validator\\(",
+      "message": "Use @field_validator instead of @validator (Pydantic v2)",
+      "suggestion": "@field_validator(",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "pydantic-old-root-validator",
+      "pattern": "@root_validator",
+      "message": "Use @model_validator instead of @root_validator (Pydantic v2)",
+      "suggestion": "@model_validator",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["pydantic", "python"]
+    },
+    {
+      "id": "sql-fstring-select",
+      "pattern": "f[\"']SELECT\\s+.*\\{.*\\}",
+      "message": "SQL injection risk: Use parameterized queries ($1, $2) instead of f-strings",
+      "suggestion": "await conn.fetch(\"SELECT ... WHERE col = $1\", value)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["sql", "security", "python"]
+    },
+    {
+      "id": "sql-fstring-insert",
+      "pattern": "f[\"']INSERT\\s+.*\\{.*\\}",
+      "message": "SQL injection risk: Use parameterized queries ($1, $2) instead of f-strings",
+      "suggestion": "await conn.execute(\"INSERT INTO ... VALUES ($1)\", value)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["sql", "security", "python"]
+    },
+    {
+      "id": "sql-fstring-update",
+      "pattern": "f[\"']UPDATE\\s+.*\\{.*\\}",
+      "message": "SQL injection risk: Use parameterized queries ($1, $2) instead of f-strings",
+      "suggestion": "await conn.execute(\"UPDATE ... SET col = $1\", value)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["sql", "security", "python"]
+    },
+    {
+      "id": "sql-fstring-delete",
+      "pattern": "f[\"']DELETE\\s+.*\\{.*\\}",
+      "message": "SQL injection risk: Use parameterized queries ($1, $2) instead of f-strings",
+      "suggestion": "await conn.execute(\"DELETE FROM ... WHERE col = $1\", value)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["sql", "security", "python"]
+    },
+    {
+      "id": "naive-datetime-now",
+      "pattern": "datetime\\.now\\(\\)(?!\\s*\\.\\s*replace\\(tzinfo)",
+      "message": "Use datetime.now(UTC) for timezone-aware datetimes",
+      "suggestion": "datetime.now(UTC)",
+      "exclude_pattern": "[\"'].*datetime\\.now\\(\\)|#.*datetime\\.now\\(\\)",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["datetime", "python"]
+    },
+    {
+      "id": "bare-except",
+      "pattern": "except\\s*:",
+      "message": "Avoid bare except: - catch specific exceptions",
+      "suggestion": "except ValueError as e:",
+      "file_globs": ["*.py"],
+      "severity": "error",
+      "tags": ["error-handling", "python"]
+    },
+    {
+      "id": "wrong-conditional-import",
+      "pattern": "try:\\s*\\n\\s+import\\s+\\w+\\s*\\nexcept\\s+ImportError",
+      "message": "Use TYPE_CHECKING pattern for conditional imports",
+      "suggestion": "if TYPE_CHECKING:\\n    import module",
+      "file_globs": ["*.py"],
+      "severity": "warning",
+      "tags": ["imports", "python"]
+    }
+  ]
+}
