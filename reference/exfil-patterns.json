@@ -1,0 +1,30 @@
+{
+  "secret_patterns": [
+    { "id": "private-key", "pattern": "-----BEGIN (?:RSA |EC |DSA |PGP |OPENSSH )?PRIVATE KEY", "description": "Private key material" },
+    { "id": "aws-access-key", "pattern": "AKIA[0-9A-Z]{16}", "description": "AWS access key ID" },
+    { "id": "openai-stripe-key", "pattern": "sk-[a-zA-Z0-9]{20,}", "description": "OpenAI/Stripe secret key" },
+    { "id": "github-token", "pattern": "gh[pous]_[0-9a-zA-Z]{36}", "description": "GitHub token" },
+    { "id": "github-pat", "pattern": "github_pat_[0-9a-zA-Z_]{22,}", "description": "GitHub fine-grained PAT" },
+    { "id": "slack-token", "pattern": "xox[pboa]-[0-9]{10,}", "description": "Slack token" },
+    { "id": "google-api-key", "pattern": "AIza[0-9A-Za-z\\-_]{35}", "description": "Google API key" },
+    { "id": "jwt-token", "pattern": "eyJ[a-zA-Z0-9_-]{10,}\\.[a-zA-Z0-9_-]{10,}", "description": "JWT token" },
+    { "id": "password-in-url", "pattern": "[a-zA-Z]{3,10}://[^/\\s:@]+:[^/\\s:@]+@", "description": "Password embedded in URL" },
+    { "id": "twilio-key", "pattern": "SK[0-9a-fA-F]{32}", "description": "Twilio API key" },
+    { "id": "stripe-live-key", "pattern": "sk_live_[0-9a-zA-Z]{24,}", "description": "Stripe live secret key" }
+  ],
+  "suspicious_domains": [
+    "webhook.site", "requestbin.com", "hookbin.com", "pipedream.com",
+    "beeceptor.com", "burpcollaborator.net", "interact.sh",
+    "canarytokens.com", "oastify.com"
+  ],
+  "bash_exfil_commands": [
+    { "id": "curl-wget", "pattern": "\\b(curl|wget)\\b", "description": "HTTP client — check URL for secrets" },
+    { "id": "netcat", "pattern": "\\b(nc|netcat|ncat)\\b", "description": "Network socket tool" },
+    { "id": "dns-exfil", "pattern": "\\b(dig|nslookup|host)\\b", "description": "DNS lookup — check for encoded hostnames" },
+    { "id": "sed-exec", "pattern": "sed\\b.*['\"][^'\"]*/.*/e", "description": "sed with e modifier (command execution)" },
+    { "id": "git-upload-pack", "pattern": "git\\b.*--upload-pack", "description": "git upload-pack (command execution)" },
+    { "id": "man-html", "pattern": "man\\b.*--html", "description": "man --html (command execution)" }
+  ],
+  "entropy_threshold": 4.0,
+  "entropy_min_length": 20
+}

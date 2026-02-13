@@ -6,7 +6,7 @@ Detects user intent and injects relevant context from reference files.
 Called by Claude Code's UserPromptSubmit hook.
 
 Input: JSON on stdin with session_id, transcript_path, cwd, etc.
-       The user's prompt is in the input as "query" or extracted from the transcript.
+       The user's prompt is in the input as "prompt".
 Output: JSON with hookSpecificOutput containing additionalContext
 """
 
@@ -22,7 +22,7 @@ def get_plugin_dir() -> Path:
     env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if env_root:
         return Path(env_root)
-    return Path(__file__).parent.parent.parent
+    return Path(__file__).parent.parent
 
 
 def load_intent_rules() -> list[dict]:
@@ -115,8 +115,8 @@ def main():
     try:
         input_data = json.load(sys.stdin)
 
-        # UserPromptSubmit provides the prompt in "query"
-        prompt = input_data.get("query", "")
+        # UserPromptSubmit provides the prompt in "prompt"
+        prompt = input_data.get("prompt", "")
 
         if not prompt:
             print(json.dumps({}))

@@ -22,7 +22,7 @@ def get_plugin_dir() -> Path:
     env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if env_root:
         return Path(env_root)
-    return Path(__file__).parent.parent.parent
+    return Path(__file__).parent.parent
 
 
 def load_patterns() -> list[dict]:
